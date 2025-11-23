@@ -1,27 +1,48 @@
 cmake_minimum_required(VERSION 3.10.0)
 project(gpge VERSION 0.1.0 LANGUAGES C CXX)
 
-include_directories(glfw/include)
+set(CMAKE_CXX_STANDARD 11)
+
+file(GLOB SOURCES 
+    "src/*.cpp"
+    "src/**/*.cpp"
+    "src/**/**/*.cpp"
+    "src/**/**/**/*.cpp"
+    "src/include/*.h"
+    "src/include/**/*.h"
+    "src/include/**/**/*.h"
+    "src/include/**/**/**/*.h"
+)
+
+add_executable(gpge ${SOURCES})
 
 find_package(OpenGL REQUIRED)
 
-
-set(IMGUI_PATH "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
-
+# --- ImGui Library ---
+set(IMGUI_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/")
 file(GLOB IMGUI_SOURCES
     "${IMGUI_PATH}/*.cpp"
     "${IMGUI_PATH}/backends/imgui_impl_glfw.cpp"
     "${IMGUI_PATH}/backends/imgui_impl_opengl3.cpp"
 )
-
 add_library(imgui STATIC ${IMGUI_SOURCES})
-target_include_directories(imgui PUBLIC "${IMGUI_PATH}" "${IMGUI_PATH}/backends")
+target_include_directories(imgui PUBLIC "${IMGUI_PATH}" "${IMGUI_PATH}/backends" lib/glfw/include)
+# ---------------------
+# --- GLEW Library ---
+set (GLEW_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lib/glew/")
+file(GLOB GLEW_SOURCES
+    "${GLEW_PATH}/src/glew.c"
+)
+add_library(glew STATIC ${GLEW_SOURCES})
+target_include_directories(glew PUBLIC "${GLEW_PATH}" "${GLEW_PATH}/include")
+# ---------------------
 
 
-add_subdirectory(glfw)
+add_definitions(-DGLEW_STATIC)
 
-add_executable(gpge main.cpp)
-target_link_libraries(gpge PRIVATE imgui glfw OpenGL::GL)
+add_subdirectory(lib/glfw)
+
+target_link_libraries(gpge PRIVATE imgui glfw OpenGL::GL glew)
 
 include(CTest)
 enable_testing()
