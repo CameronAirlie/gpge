@@ -5,6 +5,7 @@
 #include <GLFW\glfw3.h>
 
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
@@ -245,9 +246,44 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         ImGui::NewFrame();
-        ImGui::DockSpaceOverViewport();
+
+        ImGuiID dockspace_id = ImGui::GetID("My Dockspace");
+        ImGuiViewport *viewport = ImGui::GetMainViewport();
+
+        static bool dockspace_built = false;
+        if (!dockspace_built)
+        {
+            ImGui::DockBuilderRemoveNode(dockspace_id); // clear any previous layout
+            ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace | ImGuiDockNodeFlags_NoUndocking);
+            ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
+
+            ImGuiID dock_id_left, dock_id_right;
+            dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f, nullptr, nullptr);
+            dock_id_right = ImGui::DockBuilderGetNode(dockspace_id)->ChildNodes[1]->ID;
+
+            ImGui::DockBuilderDockWindow("My Controls", dock_id_left);
+            ImGui::DockBuilderDockWindow("My Scene", dock_id_right);
+
+            ImGui::DockBuilderFinish(dockspace_id);
+            dockspace_built = true;
+        }
+
+        ImGui::SetNextWindowPos(viewport->Pos);
+        ImGui::SetNextWindowSize(viewport->Size);
+        ImGui::SetNextWindowViewport(viewport->ID);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::Begin("My Dockspace", nullptr,
+                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+                         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                         ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus |
+                         ImGuiWindowFlags_NoBackground);
+        ImGui::DockSpace(dockspace_id, ImVec2(0, 0), ImGuiDockNodeFlags_NoUndocking);
+        ImGui::End();
+        ImGui::PopStyleVar();
 
         {
+            ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_Always);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
             ImGui::Begin("My Scene");
 
             const float window_width = ImGui::GetContentRegionAvail().x;
@@ -266,8 +302,18 @@ int main()
                 ImVec2(1, 0));
 
             ImGui::End();
-            ImGui::Render();
+            ImGui::PopStyleVar();
         }
+        {
+            ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_Always);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+            ImGui::Begin("My Controls");
+            ImGui::Text("Hello, world!");
+            ImGui::End();
+            ImGui::PopStyleVar();
+        }
+
+        ImGui::Render();
 
         bind_framebuffer();
 
