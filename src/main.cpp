@@ -251,15 +251,14 @@ int main()
         ImGuiViewport *viewport = ImGui::GetMainViewport();
 
         static bool dockspace_built = false;
+        static ImGuiID dock_id_left = 0, dock_id_right = 0;
         if (!dockspace_built)
         {
             ImGui::DockBuilderRemoveNode(dockspace_id); // clear any previous layout
             ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace | ImGuiDockNodeFlags_NoUndocking);
             ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
 
-            ImGuiID dock_id_left, dock_id_right;
-            dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f, nullptr, nullptr);
-            dock_id_right = ImGui::DockBuilderGetNode(dockspace_id)->ChildNodes[1]->ID;
+            ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f, &dock_id_left, &dock_id_right);
 
             ImGui::DockBuilderDockWindow("My Controls", dock_id_left);
             ImGui::DockBuilderDockWindow("My Scene", dock_id_right);
@@ -281,16 +280,16 @@ int main()
         ImGui::End();
         ImGui::PopStyleVar();
 
+        float window_width = 0.0f, window_height = 0.0f;
         {
-            ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_Always);
+            ImGui::SetNextWindowDockID(dock_id_right, ImGuiCond_Always);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
             ImGui::Begin("My Scene");
 
-            const float window_width = ImGui::GetContentRegionAvail().x;
-            const float window_height = ImGui::GetContentRegionAvail().y;
+            window_width = ImGui::GetContentRegionAvail().x;
+            window_height = ImGui::GetContentRegionAvail().y;
 
             rescale_framebuffer(window_width, window_height);
-            glViewport(0, 0, window_width, window_height);
 
             ImVec2 pos = ImGui::GetCursorScreenPos();
 
@@ -305,7 +304,7 @@ int main()
             ImGui::PopStyleVar();
         }
         {
-            ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_Always);
+            ImGui::SetNextWindowDockID(dock_id_left, ImGuiCond_Always);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
             ImGui::Begin("My Controls");
             ImGui::Text("Hello, world!");
@@ -315,14 +314,17 @@ int main()
 
         ImGui::Render();
 
+        // Render to framebuffer
         bind_framebuffer();
+        glViewport(0, 0, window_width, window_height); // Ensure viewport matches framebuffer size
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);          // Clear framebuffer
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         glUseProgram(shader);
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);
         glUseProgram(0);
-
         unbind_framebuffer();
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
