@@ -44,6 +44,11 @@ add_subdirectory(lib/glfw)
 
 target_link_libraries(gpge PRIVATE imgui glfw OpenGL::GL glew)
 
+target_compile_definitions(imgui PUBLIC IMGUI_ENABLE_DOCKING)
+target_compile_definitions(gpge PRIVATE IMGUI_ENABLE_DOCKING)
+
+target_include_directories(gpge PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
 include(CTest)
 enable_testing()
 
